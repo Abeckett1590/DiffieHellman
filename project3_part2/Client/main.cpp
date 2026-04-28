@@ -123,7 +123,20 @@ int main() {
 
     // TODO: compute the shared secret and store it in secret_size
     // HINT: using DH_compute_key()
-    
+
+    secret_size = DH_compute_key(sharedSecret,serverPubKey,privkey);
+
+    if(secret_size<=0){
+        std::cerr << "Error computing shared secret" << std::endl;
+        handleErrors();
+    }
+
+    unsigned char session_key[32];
+
+    if(!EVP_Digest(sharedSecret,secret_size,session_key,NULL,EVP_sha256(),NULL)){
+        std::cerr << "Error deriving session key" << std::endl;
+        handleErrors();
+    }
 
     std::cout << "Shared Secret (Hex): ";
     for (int i = 0; i < secret_size; i++) {
@@ -154,7 +167,7 @@ int main() {
         // Encrypt message
         unsigned char ciphertext[BUFFER_SIZE];
         int ciphertext_len;
-        encryptMessage(message, ciphertext, &ciphertext_len, iv, sharedSecret);
+        encryptMessage(message, ciphertext, &ciphertext_len, iv, session_key);
 
         // Send IV and encrypted message to server
         send(clientSocket, iv, EVP_MAX_IV_LENGTH, 0);
